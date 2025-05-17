@@ -7,7 +7,7 @@ import { formatFileSize } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from '@/components/ui/textarea';
-import { File, FileImage, FileText, FileArchive, Loader2, AlertTriangle, Smile, Ruler, CalendarDays, Image as ImageIcon, Camera } from 'lucide-react';
+import { File, FileImage, FileText, FileArchive, Loader2, AlertTriangle, Smile, Ruler, CalendarDays, Image as ImageIcon, Camera, Languages } from 'lucide-react'; // Added Languages
 import { cn } from '@/lib/utils';
 
 interface FileItemProps {
@@ -204,13 +204,60 @@ export function FileItem({ item }: FileItemProps) {
                </div>
              )}
           </div>
+
+          { (item.ocrText || item.isTranslationLoading) && ( // Show translation section if OCR text exists or translation is loading
+            <div>
+              <h4 className="text-md font-medium mb-1 text-foreground flex items-center">
+                <Languages className="h-5 w-5 mr-2 text-accent" /> Translation:
+              </h4>
+              {item.isTranslationLoading && ( 
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span>Translating text...</span>
+                </div>
+              )}
+              {item.translationError && (
+                <Alert variant="destructive" className="mt-2 rounded-lg">
+                  <AlertTriangle className="h-5 w-5" />
+                  <AlertTitle>Translation Trouble!</AlertTitle>
+                  <AlertDescription>{item.translationError}</AlertDescription>
+                </Alert>
+              )}
+              {!item.isTranslationLoading && !item.translationError && item.ocrText && (
+                <>
+                  {item.isTranslationNeeded && item.translatedOcrText ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        Original Language: <span className="font-medium text-foreground">{item.detectedSourceLanguage || 'N/A'}</span>
+                      </p>
+                      <Textarea
+                        readOnly
+                        value={item.translatedOcrText}
+                        className="mt-1 h-28 text-sm bg-background border-input rounded-lg shadow-inner"
+                        placeholder="Translated text would appear here."
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground italic mt-1 p-2 bg-muted/30 rounded-lg">
+                      <span>Text is already in English (Detected: {item.detectedSourceLanguage || 'N/A'}). No translation needed.</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {!item.isTranslationLoading && !item.translationError && !item.ocrText && !item.ocrError && (
+                 <div className="flex items-center space-x-2 text-sm text-muted-foreground italic mt-1 p-2 bg-muted/30 rounded-lg">
+                    <span>No OCR text to translate.</span>
+                 </div>
+              )}
+            </div>
+          )}
         </CardContent>
       )}
       {!isImage && item.file && (
          <CardContent className="p-4 border-t">
             <div className="flex items-center space-x-2 text-md text-muted-foreground p-2 bg-muted/30 rounded-lg">
                 <Smile className="h-5 w-5 mr-2 text-primary" />
-                <span>This file is ready for adventure, but no OCR, photo details, or EXIF insights for this type!</span>
+                <span>This file is ready for adventure, but no OCR, photo details, EXIF insights, or translation for this type!</span>
             </div>
          </CardContent>
       )}

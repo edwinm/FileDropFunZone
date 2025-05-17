@@ -6,6 +6,7 @@ import type { UploadedFile } from '@/types';
 import { FileDropzone } from '@/components/file-dropzone';
 import { FileList } from '@/components/file-list';
 import { ocrImageFile } from '@/ai/flows/ocr-image-file';
+import { translateAndIdentifyLanguage } from '@/ai/flows/translate-and-identify-language-flow';
 import { fileToDataUri } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
@@ -59,25 +60,86 @@ export default function HomePage() {
     });
   };
 
+  const handleTranslation = async (fileId: string, textToTranslate: string, originalFileName: string) => {
+    if (!textToTranslate || textToTranslate.trim() === "") {
+      setUploadedFiles(prevFiles =>
+        prevFiles.map(f =>
+          f.id === fileId ? { 
+            ...f, 
+            isTranslationLoading: false, 
+            translatedOcrText: "",
+            detectedSourceLanguage: "N/A",
+            isTranslationNeeded: false,
+          } : f
+        )
+      );
+      return;
+    }
+
+    try {
+      const translationResult = await translateAndIdentifyLanguage({ text: textToTranslate });
+      setUploadedFiles(prevFiles =>
+        prevFiles.map(f =>
+          f.id === fileId ? { 
+            ...f, 
+            translatedOcrText: translationResult.translatedText,
+            detectedSourceLanguage: translationResult.sourceLanguage,
+            isTranslationNeeded: translationResult.isTranslationNeeded,
+            isTranslationLoading: false 
+          } : f
+        )
+      );
+      if (translationResult.isTranslationNeeded) {
+        toast({
+          title: "🌍 Translation Complete!",
+          description: `Text from ${originalFileName} (detected as ${translationResult.sourceLanguage}) translated to English.`,
+        });
+      }
+    } catch (error) {
+      console.error('Translation Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown translation error';
+      setUploadedFiles(prevFiles =>
+        prevFiles.map(f =>
+          f.id === fileId ? { ...f, translationError: errorMessage, isTranslationLoading: false } : f
+        )
+      );
+      toast({
+        title: "🚧 Translation Trouble!",
+        description: `Could not translate text from ${originalFileName}: ${errorMessage}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleOcr = async (fileId: string, dataUri: string, originalFileName: string) => {
     try {
       const result = await ocrImageFile({ photoDataUri: dataUri });
       setUploadedFiles(prevFiles =>
         prevFiles.map(f =>
-          f.id === fileId ? { ...f, ocrText: result.extractedText, isOcrLoading: false } : f
+          f.id === fileId ? { ...f, ocrText: result.extractedText, isOcrLoading: false, isTranslationLoading: !!result.extractedText } : f
         )
       );
       toast({
         title: "✨ OCR Success! ✨",
-        description: `Woohoo! Text extracted from ${originalFileName}.`,
-        variant: "default",
+        description: `Text extracted from ${originalFileName}. Translating if needed...`,
       });
+
+      if (result.extractedText) {
+        await handleTranslation(fileId, result.extractedText, originalFileName);
+      } else {
+         // No text from OCR, so no translation needed
+        setUploadedFiles(prevFiles =>
+          prevFiles.map(f =>
+            f.id === fileId ? { ...f, isTranslationLoading: false, detectedSourceLanguage: 'N/A', isTranslationNeeded: false } : f
+          )
+        );
+      }
     } catch (error) {
       console.error('OCR Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown OCR error';
       setUploadedFiles(prevFiles =>
         prevFiles.map(f =>
-          f.id === fileId ? { ...f, ocrError: errorMessage, isOcrLoading: false } : f
+          f.id === fileId ? { ...f, ocrError: errorMessage, isOcrLoading: false, isTranslationLoading: false } : f
         )
       );
       toast({
@@ -160,6 +222,7 @@ export default function HomePage() {
         isMetadataLoading: isImage,
         isOcrLoading: isImage,
         isExifLoading: isImage, 
+        isTranslationLoading: false, // Initialize translation loading state
       };
     });
 
@@ -181,14 +244,17 @@ export default function HomePage() {
             )
           );
 
+          // Set OCR loading to true, translation will be set inside handleOcr
+          setUploadedFiles(prev => prev.map(f => f.id === uploadedFile.id ? { ...f, isOcrLoading: true } : f));
+
           await Promise.all([
             handleImageMetadata(uploadedFile.id, dataUri),
-            handleOcr(uploadedFile.id, dataUri, uploadedFile.name),
+            handleOcr(uploadedFile.id, dataUri, uploadedFile.name), // This will trigger translation
             handleExifData(uploadedFile.id, uploadedFile.file)
           ]);
 
         } catch (error) {
-          console.error('Error processing file for metadata/OCR/EXIF:', uploadedFile.name, error);
+          console.error('Error processing file for metadata/OCR/EXIF/Translation:', uploadedFile.name, error);
           const errorMessage = error instanceof Error ? error.message : 'Failed to read file for processing.';
           setUploadedFiles(prevFiles =>
             prevFiles.map(f =>
@@ -198,9 +264,11 @@ export default function HomePage() {
                     metadataError: f.metadataError || errorMessage, 
                     ocrError: f.ocrError || errorMessage, 
                     exifError: f.exifError || errorMessage,
+                    translationError: f.translationError || errorMessage,
                     isMetadataLoading: false, 
                     isOcrLoading: false,
                     isExifLoading: false,
+                    isTranslationLoading: false,
                   } 
                 : f
             )
