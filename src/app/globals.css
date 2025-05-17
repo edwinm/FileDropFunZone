@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-comic-neue), cursive, sans-serif; /* Changed to Comic Neue */
 }
 
 @layer base {
@@ -34,9 +34,9 @@ body {
 
     --border: 208 40% 85%; /* Muted blue for borders */
     --input: 208 40% 90%; /* Lighter muted blue for input backgrounds */
-    --ring: 197 71% 65%; /* Saturated sky blue for focus rings */
+    --ring: 16 100% 58%; /* Accent color for focus rings for playful theme */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly larger radius for playful feel */
 
     /* Chart colors (can be adjusted if charts are used, keeping defaults for now) */
     --chart-1: 12 76% 61%;
@@ -84,7 +84,7 @@ body {
 
     --border: 215 20% 35%;
     --input: 215 20% 35%;
-    --ring: 197 71% 55%;
+    --ring: 16 100% 50%; /* Accent color for dark theme focus rings */
     
     /* Chart colors for dark theme */
     --chart-1: 220 70% 50%;

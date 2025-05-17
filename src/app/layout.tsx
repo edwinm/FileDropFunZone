@@ -1,21 +1,17 @@
 import type {Metadata} from 'next';
-import { Geist, Geist_Mono } from 'next/font/google'; // Corrected import: Geist is default, Geist_Mono is specific
+import { Comic_Neue } from 'next/font/google'; // Changed font
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster"; // Added Toaster
+import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({ // Changed to Geist for the sans-serif font as per Next.js font conventions
-  variable: '--font-geist-sans',
+const comicNeue = Comic_Neue({ // New playful font
+  variable: '--font-comic-neue',
   subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  weight: ['300', '400', '700'], // Light, Regular, Bold
 });
 
 export const metadata: Metadata = {
-  title: 'FileDrop Explorer',
-  description: 'Drag, drop, and explore your files with OCR.',
+  title: 'FileDrop FunZone!', // Updated title
+  description: 'Drag, drop, and explore your files with a playful twist!', // Updated description
 };
 
 export default function RootLayout({
@@ -25,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}> {/* Added font-sans to apply Geist as default */}
+      <body className={`${comicNeue.variable} font-sans antialiased`}> {/* Apply new font */}
         {children}
         <Toaster />
       </body>

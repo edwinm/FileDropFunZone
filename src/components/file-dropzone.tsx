@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { useState, useCallback } from 'react';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Box } from 'lucide-react'; // Added Box icon for playful theme
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,9 +68,11 @@ export function FileDropzone({ onFilesAdded, disabled }: FileDropzoneProps) {
   return (
     <Card 
       className={cn(
-        "border-2 border-dashed hover:border-accent transition-colors duration-200 ease-in-out",
-        isDraggingOver && !disabled ? "border-accent bg-accent/10" : "border-input",
-        disabled ? "bg-muted/50 cursor-not-allowed" : "cursor-pointer bg-card"
+        "border-4 border-dashed rounded-2xl shadow-inner-lg transition-all duration-300 ease-out",
+        isDraggingOver && !disabled 
+          ? "border-accent scale-105 bg-accent/10 ring-4 ring-accent/30 transform" 
+          : "border-input hover:border-primary/70",
+        disabled ? "bg-muted/50 cursor-not-allowed opacity-70" : "cursor-pointer bg-card hover:shadow-lg"
       )}
       onClick={handleClick}
       onDragEnter={handleDragEnter}
@@ -81,7 +83,7 @@ export function FileDropzone({ onFilesAdded, disabled }: FileDropzoneProps) {
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
     >
-      <CardContent className="p-6 text-center">
+      <CardContent className="p-8 text-center flex flex-col items-center justify-center space-y-4">
         <input
           type="file"
           id="fileInput"
@@ -91,27 +93,27 @@ export function FileDropzone({ onFilesAdded, disabled }: FileDropzoneProps) {
           disabled={disabled}
           accept="image/*,application/pdf,text/*,application/zip,application/x-rar-compressed" 
         />
-        <UploadCloud 
+        <Box // Changed icon to Box
           className={cn(
-            "mx-auto h-16 w-16 mb-4",
-            isDraggingOver && !disabled ? "text-accent" : "text-muted-foreground",
+            "mx-auto h-24 w-24 mb-2 transition-transform duration-200 ease-in-out",
+            isDraggingOver && !disabled ? "text-accent scale-110" : "text-primary",
             disabled ? "text-muted-foreground/50" : ""
           )} 
         />
         <p className={cn(
-            "text-lg font-semibold mb-1",
+            "text-xl font-bold", // Made text bolder and larger
             isDraggingOver && !disabled ? "text-accent" : "text-foreground",
              disabled ? "text-muted-foreground/70" : ""
           )}
         >
-          Drag & Drop files here
+          Drop your awesome files here!
         </p>
         <p className={cn(
-            "text-sm",
+            "text-md", // Slightly larger subtext
             disabled ? "text-muted-foreground/70" : "text-muted-foreground"
           )}
         >
-          or click to browse. Images will be processed with OCR.
+          Or click to pick some goodies. Images get OCR'd!
         </p>
       </CardContent>
     </Card>
