@@ -11,10 +11,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Trash2, RotateCcw, Sparkles } from 'lucide-react';
+import EXIF from 'exif-js';
 
 export default function HomePage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [isProcessingDrop, setIsProcessingDrop] = useState(false); // Renamed for clarity
+  const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const { toast } = useToast();
 
   const handleImageMetadata = async (fileId: string, dataUri: string) => {
@@ -52,14 +53,13 @@ export default function HomePage() {
               : f
           )
         );
-        resolve(); // Resolve even on error so flow continues
+        resolve(); 
       };
       img.src = dataUri;
     });
   };
 
   const handleOcr = async (fileId: string, dataUri: string, originalFileName: string) => {
-    // OCR loading state is now set when file is initially added
     try {
       const result = await ocrImageFile({ photoDataUri: dataUri });
       setUploadedFiles(prevFiles =>
@@ -88,6 +88,63 @@ export default function HomePage() {
     }
   };
 
+  const handleExifData = async (fileId: string, file: File) => {
+    setUploadedFiles(prevFiles =>
+      prevFiles.map(f =>
+        f.id === fileId ? { ...f, isExifLoading: true, exifError: undefined } : f
+      )
+    );
+    try {
+      const exifData = await new Promise<Record<string, any> | null>((resolve, reject) => {
+        EXIF.getData(file as any, function(this: any) {
+          try {
+            const allTags = EXIF.getAllTags(this);
+            if (allTags && Object.keys(allTags).length > 0) {
+              resolve(allTags);
+            } else {
+              resolve(null); 
+            }
+          } catch (e) {
+            console.error("Error processing EXIF tags:", e);
+            reject(new Error("Failed to process EXIF tags."));
+          }
+        });
+      });
+
+      if (exifData) {
+        setUploadedFiles(prevFiles =>
+          prevFiles.map(f =>
+            f.id === fileId ? { ...f, exifData, isExifLoading: false } : f
+          )
+        );
+        toast({
+          title: "📸 EXIF Data Found!",
+          description: `Extracted EXIF metadata from ${file.name}.`,
+        });
+      } else {
+        setUploadedFiles(prevFiles =>
+          prevFiles.map(f =>
+            f.id === fileId ? { ...f, exifError: "No EXIF data found or file is not an image with EXIF.", isExifLoading: false } : f
+          )
+        );
+      }
+    } catch (error) {
+      console.error('EXIF Data Extraction Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown EXIF extraction error';
+      setUploadedFiles(prevFiles =>
+        prevFiles.map(f =>
+          f.id === fileId ? { ...f, exifError: errorMessage, isExifLoading: false } : f
+        )
+      );
+      toast({
+        title: "💔 EXIF Extraction Failed",
+        description: `Could not extract EXIF data from ${file.name}: ${errorMessage}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const handleFilesAdded = useCallback(async (files: File[]) => {
     setIsProcessingDrop(true);
     
@@ -101,12 +158,13 @@ export default function HomePage() {
         type: file.type,
         lastModifiedDate: new Date(file.lastModified).toLocaleDateString(),
         isMetadataLoading: isImage,
-        isOcrLoading: isImage, // Initialize OCR loading state here
+        isOcrLoading: isImage,
+        isExifLoading: isImage, 
       };
     });
 
     setUploadedFiles(prevFiles => [...newUploadedFiles, ...prevFiles]);
-    setIsProcessingDrop(false); // Re-enable dropzone after initial add
+    setIsProcessingDrop(false); 
 
     toast({
       title: `📬 ${files.length} File(s) Dropped In!`,
@@ -117,31 +175,32 @@ export default function HomePage() {
       if (uploadedFile.type.startsWith('image/')) {
         try {
           const dataUri = await fileToDataUri(uploadedFile.file);
-          // Set preview URI first so it can be shown while metadata/OCR loads
           setUploadedFiles(prev => 
             prev.map(f => 
               f.id === uploadedFile.id ? { ...f, imagePreviewDataUri: dataUri } : f
             )
           );
 
-          // Run metadata extraction and OCR in parallel for faster feedback
           await Promise.all([
             handleImageMetadata(uploadedFile.id, dataUri),
-            handleOcr(uploadedFile.id, dataUri, uploadedFile.name)
+            handleOcr(uploadedFile.id, dataUri, uploadedFile.name),
+            handleExifData(uploadedFile.id, uploadedFile.file)
           ]);
 
         } catch (error) {
-          console.error('Error processing file for metadata/OCR:', uploadedFile.name, error);
+          console.error('Error processing file for metadata/OCR/EXIF:', uploadedFile.name, error);
           const errorMessage = error instanceof Error ? error.message : 'Failed to read file for processing.';
           setUploadedFiles(prevFiles =>
             prevFiles.map(f =>
               f.id === uploadedFile.id 
                 ? { 
                     ...f, 
-                    metadataError: errorMessage, 
-                    ocrError: f.ocrError || errorMessage, // Keep existing OCR error if any
+                    metadataError: f.metadataError || errorMessage, 
+                    ocrError: f.ocrError || errorMessage, 
+                    exifError: f.exifError || errorMessage,
                     isMetadataLoading: false, 
-                    isOcrLoading: false 
+                    isOcrLoading: false,
+                    isExifLoading: false,
                   } 
                 : f
             )

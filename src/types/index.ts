@@ -12,4 +12,7 @@ export interface UploadedFile {
   ocrText?: string;
   isOcrLoading?: boolean;
   ocrError?: string;
+  exifData?: Record<string, any>; // To store parsed EXIF data
+  isExifLoading?: boolean;
+  exifError?: string;
 }
