@@ -4,6 +4,11 @@ export interface UploadedFile {
   name: string;
   size: number; // in bytes
   type: string; // MIME type
+  lastModifiedDate?: string; // Formatted last modified date
+  dimensions?: { width: number; height: number };
+  imagePreviewDataUri?: string; // Data URI for preview and dimension extraction
+  isMetadataLoading?: boolean;
+  metadataError?: string;
   ocrText?: string;
   isOcrLoading?: boolean;
   ocrError?: string;
