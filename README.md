@@ -1,5 +1,13 @@
-# Firebase Studio
+# FileDrop FunZone!
 
-This is a NextJS starter in Firebase Studio.
+Next.js project created in half an hour with Firebase Studio.
 
-To get started, take a look at src/app/page.tsx.
+Try it out here:
+
+[FileDrop FunZone!](https://studio--filedrop-explorer.us-central1.hosted.app/)
+
+(The app will be shut down by excessive use or misuse).
+
+Screencapture:
+
+![screencap.png](pics/screencap.png)
